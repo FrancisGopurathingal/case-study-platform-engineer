@@ -116,15 +116,22 @@ jobs:
               run: |
                  Get-ChildItem -Recurse -Filter *.dll
 
+            # Locate tests DLLs
+            - name: Locate - Test DLL's
+              id: find_tests
+              shell: pwsh
+              run: |
+                 $dll = Get-ChildItem -Recurse -Filter CalculatorTests.dll | Select-Object -First 1
+                 echo "TEST_DLL=$($dll.FullName)" >> $env:GITHUB_ENV
+            
+
             # Setup VSTest (Required)
             - name: Setup VSTest
               uses: microsoft/vstest-action@v1.0.0
               with:
                 testAssembly: |
-                    **\bin\${{ env.BUILD_CONFIGURATION }}\**\*Tests.dll
-                    !**\obj\**
-                searchFolder: ${{ github.workspace }}
-
+                    testAssembly: $env:TEST_DLL
+                    
             # Run Tests
             # - name: Run tests (x86)
             #   shell: pwsh
