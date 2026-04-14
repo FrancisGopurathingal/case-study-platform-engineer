@@ -79,6 +79,10 @@ jobs:
             # Restore NuGet packages
             - name: Restore NuGet packages
               run: nuget restore $env:SOLUTION -ConfigFile nuget.config
+
+            # Setup MSBuild (Required)
+            - name: Setup MSBuild
+              uses: microsoft/setup-msbuild@v2
             
             # Build the solution
             - name: Build the solution (x86)
