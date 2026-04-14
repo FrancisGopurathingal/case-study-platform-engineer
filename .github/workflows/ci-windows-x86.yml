@@ -112,7 +112,7 @@ jobs:
 
             # Setup VSTest (Required)
             - name: Setup VSTest
-              uses: microsoft/vstest@v2
+              uses: microsoft/vstest-action@v1
 
             # Run Tests
             - name: Run tests (x86)
