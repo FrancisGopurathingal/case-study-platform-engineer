@@ -27,7 +27,7 @@ jobs:
         env:
             SOLUTION: 'DemoSolution.sln'
             BUILD_CONFIGURATION: Release
-            BUILD_PLATFORM: x86
+            BUILD_PLATFORM: "Any CPU"
         
         steps:
             - name: Checkout code
