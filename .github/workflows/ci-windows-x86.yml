@@ -25,7 +25,7 @@ jobs:
         runs-on: windows-latest
 
         env:
-            SOLUTION: 'DemoSolutoin.sln'
+            SOLUTION: 'DemoSolution.sln'
             BUILD_CONFIGURATION: Release
             BUILD_PLATFORM: x86
         
