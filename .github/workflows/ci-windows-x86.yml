@@ -122,10 +122,8 @@ jobs:
               with:
                 testAssembly: |
                     **\bin\${{ env.BUILD_CONFIGURATION }}\**\*Tests.dll
-                    **\bin\${{ env.BUILD_CONFIGURATION }}\**\*Test.dll
                     !**\obj\**
                 searchFolder: ${{ github.workspace }}
-                platform: ${{ env.BUILD_PLATFORM }}
 
             # Run Tests
             # - name: Run tests (x86)
