@@ -121,8 +121,8 @@ jobs:
               uses: microsoft/vstest-action@v1.0.0
               with:
                 testAssembly: |
-                    **\bin\${{ env.BUILD_CONFIGURATION }}\*Tests.dll
-                    **\bin\${{ env.BUILD_CONFIGURATION }}\*Test.dll
+                    **\bin\${{ env.BUILD_CONFIGURATION }}\**\*Tests.dll
+                    **\bin\${{ env.BUILD_CONFIGURATION }}\**\*Test.dll
                     !**\obj\**
                 searchFolder: ${{ github.workspace }}
                 platform: ${{ env.BUILD_PLATFORM }}
