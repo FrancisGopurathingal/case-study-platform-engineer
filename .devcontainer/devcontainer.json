@@ -1,0 +1,13 @@
+{
+  "name": ".NET 8 Dev Environment",
+  "image": "mcr.microsoft.com/devcontainers/dotnet:8.0",
+  "features": {},
+  "postCreateCommand": "dotnet restore",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-dotnettools.csharp"
+      ]
+    }
+  }
+}
