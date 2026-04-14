@@ -113,17 +113,24 @@ jobs:
             # Setup VSTest (Required)
             - name: Setup VSTest
               uses: microsoft/vstest-action@v1.0.0
+              with:
+                testAssembly: |
+                    **\bin\${{ env.BUILD_CONFIGURATION }}\*Tests.dll
+                    **\bin\${{ env.BUILD_CONFIGURATION }}\*Test.dll
+                    !**\obj\**
+                searchFolder: ${{ github.workspace }}
+                platform: ${{ env.BUILD_PLATFORM }}
 
             # Run Tests
-            - name: Run tests (x86)
-              shell: pwsh
-              run: |
-                vstest.console.exe $env:SOLUTION `
-                  "$env:RUNNER_TEMP\artifacts\**\*Tests.dll" `
-                  /Platform:x86 `
-                  /Parallel:false `
-                  /EnableCodeCoverage `
-                  /Settings:"$env:GITHUB_WORKSPACE\coverlet.runsettings"
+            # - name: Run tests (x86)
+            #   shell: pwsh
+            #   run: |
+            #     vstest.console.exe $env:SOLUTION `
+            #       "$env:RUNNER_TEMP\artifacts\**\*Tests.dll" `
+            #       /Platform:x86 `
+            #       /Parallel:false `
+            #       /EnableCodeCoverage `
+            #       /Settings:"$env:GITHUB_WORKSPACE\coverlet.runsettings"
 
             # Upload Artifacts
             - name: Upload test results and coverage reports
