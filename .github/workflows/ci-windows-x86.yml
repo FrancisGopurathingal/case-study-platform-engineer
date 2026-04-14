@@ -110,6 +110,10 @@ jobs:
                 echo "DOTNET_ROOT=C:\Program Files (x86)\dotnet" >> $env:GITHUB_ENV
                 echo "DOTNET_ROOT_X86=C:\Program Files (x86)\dotnet" >> $env:GITHUB_ENV
 
+            # Setup VSTest (Required)
+            - name: Setup VSTest
+              uses: microsoft/vstest@v2
+
             # Run Tests
             - name: Run tests (x86)
               shell: pwsh
