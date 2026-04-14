@@ -109,6 +109,12 @@ jobs:
               run: |
                 echo "DOTNET_ROOT=C:\Program Files (x86)\dotnet" >> $env:GITHUB_ENV
                 echo "DOTNET_ROOT_X86=C:\Program Files (x86)\dotnet" >> $env:GITHUB_ENV
+            
+            # List all the DLL files
+            - name: Debug - List all DLLs
+              shell: pwsh
+              run: |
+                 Get-ChildItem -Recurse -Filter *.dll
 
             # Setup VSTest (Required)
             - name: Setup VSTest
