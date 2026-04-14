@@ -1,0 +1,113 @@
+name: CI - Windows x86 build
+
+on:
+    pull_request:
+        branches: 
+            - main
+        types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+    build:
+        
+        runs-on: windows-latest
+
+        env:
+            SOLUTION: '**/*.sln'
+            BUILD_CONFIGURATION: Release
+            BUILD_PLATFORM: x86
+        
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            # Install .Net 8 x86 SDK
+            - name: Install .NET 8 x86 SDK
+              shell: pwsh
+              run: |
+                # Download dotnet-install.ps1 script
+                [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+                Invoke-WebRequest -Uri "https://dot.net/v1/dotnet-install.ps1" -OutFile "$env:TEMP\dotnet-install.ps1"
+
+                # Install .NET 8 SDK for x86
+                Write-Host "Installing .NET 8 SDK for x86..."
+                & "$env:TEMP\dotnet-install.ps1" -Channel 8.0 -Architecture x86 -InstallDir "${env:ProgramFiles(x86)}\dotnet" -Runtime dotnet -verbose
+                & "$env:TEMP\dotnet-install.ps1" -Channel 8.0 -Architecture x86 -InstallDir "${env:ProgramFiles(x86)}\dotnet"  -verbose
+                
+                Write-Host ".NET 8.0 SDK x86 installed successfully."
+
+                # Verify installation
+                $dotnetPath = "${env:ProgramFiles(x86)}\dotnet\dotnet.exe"
+                if (Test-Path $dotnetPath) {
+                    Write-Host "Installed SDKs:"
+                    & $dotnetPath --list-sdks
+                    Write-Host "Installed Runtimes:"
+                    & $dotnetPath --list-runtimes
+                } else {
+                    Write-Error "dotnet.exe not found at $dotnetPath"
+                    exit 1
+                }
+
+            # Install Visual C++ Redistributables for x86
+            - name: "Install Visual C++ Redistributables x86"
+              shell: pwsh
+              run: |
+                # Download and install VC++ Redistributables for x86    
+                $url = "https://aka.ms/vs/17/release/vc_redist.x86.exe"
+                $output = "$env:TEMP\vc_redist.x86.exe"
+                Write-Host "Downloading Visual C++ Redistributables for x86..."
+                Invoke-WebRequest -Uri $url -OutFile $output
+                Start-Process -FilePath $output -Args '/install /quiet /norestart' -Wait
+                Write-Host "Visual C++ Redistributables for x86 installed successfully."
+            
+            # Install NuGet Tool
+            - name: Setup NuGet
+              uses: NuGet/setup-nuget@v2
+            
+            # Restore NuGet packages
+            - name: Restore NuGet packages
+              run: nuget restore $env:SOLUTION -ConfigFile NuGet.Config
+            
+            # Build the solution
+            - name: Build the solution (x86)
+              shell: pwsh
+              run: |
+                msbuild $env:SOLUTION `
+                  /p:Configuration=$env:BUILD_CONFIGURATION `
+                  /p:Platform=$env:BUILD_PLATFORM `
+                  /p:PlatformToolset=v143
+            
+            # Publish artifacts (Build outputs)
+            - name: Publish artifacts
+              shell: pwsh
+              run: |
+                msbuild $env:SOLUTION `
+                  /p:Configuration=$env:BUILD_CONFIGURATION `
+                  /p:Platform=$env:BUILD_PLATFORM `
+                  /p:PlatformToolset=v143 `
+                  /p:OutputPath=$env:RUNNER_TEMP\artifacts
+            
+            # Set DOTNET_ROOT (x86)
+            - name: Set DOTNET_ROOT for x86
+              shell: pwsh
+              run: |
+                echo "DOTNET_ROOT=C:\Program Files (x86)\dotnet" >> $env:GITHUB_ENV
+                echo "DOTNET_ROOT_X86=C:\Program Files (x86)\dotnet" >> $env:GITHUB_ENV
+
+            # Run Tests
+            - name: Run tests (x86)
+              shell: pwsh
+              run: |
+                vstest.console.exe $env:SOLUTION `
+                  "$env:RUNNER_TEMP\artifacts\**\*Tests.dll" `
+                  /Platform:x86 `
+                  /Parallel:false `
+                  /EnableCodeCoverage `
+                  /Settings:"$env:GITHUB_WORKSPACE\coverlet.runsettings"
+
+            # Upload Artifacts
+            - name: Upload test results and coverage reports
+              uses: actions/upload-artifact@v4
+              with:
+                name: build
+                path: ${{ runner.temp }}/artifacts
+                
