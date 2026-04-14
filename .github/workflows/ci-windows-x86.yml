@@ -7,7 +7,19 @@ on:
         types: [opened, synchronize, reopened, ready_for_review]
 
 jobs:
-    build:
+    build: 
+        # Allow:
+        # 1. Push to main (post-merge)
+        # 2. Manual runs ONLY from feature/* or bug/*
+        if: |
+           github.event_name == 'push' ||
+           (
+               github.event_name == 'workflow_dispatch' &&
+               (
+                   startsWith(github.ref, 'refs/heads/feature/') ||
+                   startsWith(github.ref, 'refs/heads/bug/')
+               )
+          )
         
         runs-on: windows-latest
 
