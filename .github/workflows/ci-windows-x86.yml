@@ -25,7 +25,7 @@ jobs:
         runs-on: windows-latest
 
         env:
-            SOLUTION: '**/*.sln'
+            SOLUTION: 'DemoSolutoin.sln'
             BUILD_CONFIGURATION: Release
             BUILD_PLATFORM: x86
         
@@ -78,7 +78,7 @@ jobs:
             
             # Restore NuGet packages
             - name: Restore NuGet packages
-              run: nuget restore $env:SOLUTION -ConfigFile NuGet.Config
+              run: nuget restore $env:SOLUTION -ConfigFile nuget.config
             
             # Build the solution
             - name: Build the solution (x86)
