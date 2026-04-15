@@ -149,7 +149,7 @@ jobs:
               run: |
                  $dlls = Get-ChildItem -Recurse -Filter *Tests.dll |
                         Where-Object { $_.FullName -notmatch 'TestAdapter|\\obj\\' }
-                 if (-not dlls) {
+                 if (-not $dlls) {
                     Write-Error "No test DLLs find"
                     exit 1
                  }
