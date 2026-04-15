@@ -9,7 +9,7 @@ This project demonstrates a CI/CD pipeline using GitHub Actions with:
 
 ## Architecture
 - CalculatorApp (Console)
-- CalculatorLib (Core logic + DB)
+- Calculator.Core (Core logic + DB)
 - CalculatorTests (xUnit)
 
 ## Run Locally
