@@ -147,11 +147,22 @@ jobs:
             - name: Run tests (x86)
               shell: pwsh
               run: |
-                 & "$env:VSTEST_PATH" "**\*Tests.dll" `
-                    /Platform:$env:BUILD_PLATFORM `
-                    /Settings:coverlet.runsettings `
-                    /Parallel:false
+                 $dlls = Get-ChildItem -Recurse -Filter *Tests.dll |
+                        Where-Object { $_.FullName -notmatch 'TestAdapter|\\obj\\' }
+                 if (-not dlls) {
+                    Write-Error "No test DLLs find"
+                    exit 1
+                 }
 
+                 $settings = "$env:GITHUB_WORKSPACE\coverlet.runsettings"
+                 Write-Host "Using settings: $settings"
+                 Write-Host "Test DLLS"
+                 $dlls.FullName
+                 
+                 & "$env:VSTEST_PATH" $dlls.FullName `
+                    /Platform:x86 `
+                    /Settings:$setting
+                    
             # Upload Artifacts
             - name: Upload test results and coverage reports
               uses: actions/upload-artifact@v4
