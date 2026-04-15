@@ -132,8 +132,8 @@ jobs:
                       exit 1
                   }
             
-            Write-Host "Found runsettings at: $($settings.FullName)"
-            echo "RUNSETTINGS_PATH=$($settings.FullName)" >> $env:GITHUB_ENV
+                  Write-Host "Found runsettings at: $($settings.FullName)"
+                  echo "RUNSETTINGS_PATH=$($settings.FullName)" >> $env:GITHUB_ENV
             
             # Locate vstest.console.exe
             - name: Locate vstest.console.exe
