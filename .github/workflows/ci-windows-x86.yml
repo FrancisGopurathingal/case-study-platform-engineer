@@ -165,7 +165,7 @@ jobs:
                     exit 1
                  }
 
-                 Write-Host "Using settings: $(env.RUNSETTINGS_PATH)"
+                 Write-Host "Using settings: $($env.RUNSETTINGS_PATH)"
                  Write-Host "Test DLLS"
                  $dlls.FullName
                  
