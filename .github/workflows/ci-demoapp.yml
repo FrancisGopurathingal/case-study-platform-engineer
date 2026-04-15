@@ -1,0 +1,77 @@
+name: CI - Demo App build and test
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+
+jobs:
+  build:
+    # Allow:
+    # 1. Push to main (post-merge)
+    # 2. Manual runs ONLY from feature/* or bug/*
+    if: |
+      github.event_name == 'pull_request' ||
+      (
+        github.event_name == 'workflow_dispatch' &&
+        (
+          startsWith(github.ref, 'refs/heads/feature/') ||
+          startsWith(github.ref, 'refs/heads/bug/')
+        )
+      )
+
+    runs-on: windows-latest
+
+    env:
+      SOLUTION: DemoSolution.sln
+      CONFIGURATION: Release
+      RUNTIME: win-x86
+      TEST_RESULTS: test-results
+      ARTIFACTS: artifacts
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore ${{ env.SOLUTION }}
+
+      - name: Build solution
+        run: dotnet build ${{ env.SOLUTION }} --configuration ${{ env.CONFIGURATION }} --runtime ${{ env.RUNTIME }} --no-restore
+
+      - name: Run tests
+        run: |
+          dotnet test ${{ env.SOLUTION }} \
+            --configuration ${{ env.CONFIGURATION }} \
+            --runtime ${{ env.RUNTIME }} \
+            --no-build \
+            --settings coverlet.runsettings \
+            --results-directory ${{ env.TEST_RESULTS }} \
+            --logger "trx"
+
+      - name: Publish app artifacts
+        run: |
+          dotnet publish src/CalculatorApp/CalculatorApp.csproj \
+            --configuration ${{ env.CONFIGURATION }} \
+            --runtime ${{ env.RUNTIME }} \
+            --output ${{ env.ARTIFACTS }} \
+            --no-build
+
+      - name: Upload published artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: calculator-app-artifacts
+          path: ${{ env.ARTIFACTS }}
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: ${{ env.TEST_RESULTS }}
