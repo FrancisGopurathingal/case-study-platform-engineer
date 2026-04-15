@@ -130,7 +130,7 @@ jobs:
               uses: microsoft/vstest-action@v1.0.0
               with:
                 testAssembly: |
-                    testAssembly: $env:TEST_DLL
+                    testAssembly: ${{ env.TEST_DLL }}
                     
             # Run Tests
             # - name: Run tests (x86)
