@@ -114,15 +114,26 @@ jobs:
             - name: Debug - List all DLLs
               shell: pwsh
               run: |
-                 Get-ChildItem -Recurse -Filter *.dll
+                 Get-ChildItem -Recurse -Filter *.dll | Select-Object FullName
 
-            # Locate tests DLLs
-            - name: Locate - Test DLL's
-              id: find_tests
+            # List all the runsettings files
+            - name: Debug - List all runsettings
               shell: pwsh
               run: |
-                 $dll = Get-ChildItem -Recurse -Filter CalculatorTests.dll | Select-Object -First 1
-                 echo "TEST_DLL=$($dll.FullName)" >> $env:GITHUB_ENV
+                 Get-ChildItem -Recurse -Filter *.runsettings | Select-Object FullName
+            
+            # Resolve runsettings path
+            - name: Resolve runsettings path
+              shell: pwsh
+              run: |
+                  $settings = Get-ChildItem -Recurse -Filter coverlet.runsettings | Select-Object -First 1
+                  if (-not $settings) {
+                      Write-Error "coverlet.runsettings not found!"
+                      exit 1
+                  }
+            
+            Write-Host "Found runsettings at: $($settings.FullName)"
+            echo "RUNSETTINGS_PATH=$($settings.FullName)" >> $env:GITHUB_ENV
             
             # Locate vstest.console.exe
             - name: Locate vstest.console.exe
@@ -154,14 +165,13 @@ jobs:
                     exit 1
                  }
 
-                 $settings = "$env:GITHUB_WORKSPACE\coverlet.runsettings"
-                 Write-Host "Using settings: $settings"
+                 Write-Host "Using settings: $(env.RUNSETTINGS_PATH)"
                  Write-Host "Test DLLS"
                  $dlls.FullName
                  
                  & "$env:VSTEST_PATH" $dlls.FullName `
                     /Platform:x86 `
-                    /Settings:$setting
+                    /Settings:"$env:RUNSETTINGS_PATH"
                     
             # Upload Artifacts
             - name: Upload test results and coverage reports
