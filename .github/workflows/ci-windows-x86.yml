@@ -124,24 +124,33 @@ jobs:
                  $dll = Get-ChildItem -Recurse -Filter CalculatorTests.dll | Select-Object -First 1
                  echo "TEST_DLL=$($dll.FullName)" >> $env:GITHUB_ENV
             
-
-            # Setup VSTest (Required)
-            - name: Setup VSTest
-              uses: microsoft/vstest-action@v1.0.0
-              with:
-                testAssembly: |
-                    testAssembly: tests/CalculatorTests/bin/Release/net8.0/CalculatorTests.dll
+            # Locate vstest.console.exe
+            - name: Locate vstest.console.exe
+              shell: pwsh
+              run: |
+                    $vstest = Get-ChildItem "C:\Program Files\Microsoft Visual Studio" -Recurse -Filter vstest.console.exe -ErrorAction SilentlyContinue | Select-Object -First 1
+                        if (-not $vstest) {
+                            Write-Error "vstest.console.exe not found!"
+                            exit 1
+                       }
+                    Write-Host "Found vstest at: $($vstest.FullName)"
+                    echo "VSTEST_PATH=$($vstest.FullName)" >> $env:GITHUB_ENV
+            
+            # Run VSTest (Required)
+            # - name: Setup VSTest
+            #   uses: microsoft/vstest-action@v1.0.0
+            #   with:
+            #     testAssembly: |
+            #         testAssembly: tests/CalculatorTests/bin/Release/net8.0/CalculatorTests.dll
                     
             # Run Tests
-            # - name: Run tests (x86)
-            #   shell: pwsh
-            #   run: |
-            #     vstest.console.exe $env:SOLUTION `
-            #       "$env:RUNNER_TEMP\artifacts\**\*Tests.dll" `
-            #       /Platform:x86 `
-            #       /Parallel:false `
-            #       /EnableCodeCoverage `
-            #       /Settings:"$env:GITHUB_WORKSPACE\coverlet.runsettings"
+            - name: Run tests (x86)
+              shell: pwsh
+              run: |
+                 & "$env:VSTEST_PATH" "**\*Tests.dll" `
+                    /Platform:$env:BUILD_PLATFORM `
+                    /Settings:coverlet.runsettings `
+                    /Parallel:false
 
             # Upload Artifacts
             - name: Upload test results and coverage reports
