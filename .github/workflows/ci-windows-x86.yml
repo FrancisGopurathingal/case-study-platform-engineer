@@ -28,6 +28,7 @@ jobs:
             SOLUTION: 'DemoSolution.sln'
             BUILD_CONFIGURATION: Release
             BUILD_PLATFORM: "Any CPU"
+            BUILD_TARGET_PLATFORM: x86
         
         steps:
             - name: Checkout code
@@ -91,6 +92,7 @@ jobs:
                 msbuild $env:SOLUTION `
                   /p:Configuration=$env:BUILD_CONFIGURATION `
                   /p:Platform=$env:BUILD_PLATFORM `
+                  /p:BuildTargetPlatform=$env:BUILD_TARGET_PLATFORM `
                   /p:PlatformToolset=v143
             
             # Publish artifacts (Build outputs)
@@ -100,6 +102,7 @@ jobs:
                 msbuild $env:SOLUTION `
                   /p:Configuration=$env:BUILD_CONFIGURATION `
                   /p:Platform=$env:BUILD_PLATFORM `
+                  /p:BuildTargetPlatform=$env:BUILD_TARGET_PLATFORM `
                   /p:PlatformToolset=v143 `
                   /p:OutputPath=$env:RUNNER_TEMP\artifacts
             
@@ -109,18 +112,6 @@ jobs:
               run: |
                 echo "DOTNET_ROOT=C:\Program Files (x86)\dotnet" >> $env:GITHUB_ENV
                 echo "DOTNET_ROOT_X86=C:\Program Files (x86)\dotnet" >> $env:GITHUB_ENV
-            
-            # List all the DLL files
-            - name: Debug - List all DLLs
-              shell: pwsh
-              run: |
-                 Get-ChildItem -Recurse -Filter *.dll | Select-Object FullName
-
-            # List all the runsettings files
-            - name: Debug - List all runsettings
-              shell: pwsh
-              run: |
-                 Get-ChildItem -Recurse -Filter *.runsettings | Select-Object FullName
             
             # Resolve runsettings path
             - name: Resolve runsettings path
@@ -146,33 +137,26 @@ jobs:
                        }
                     Write-Host "Found vstest at: $($vstest.FullName)"
                     echo "VSTEST_PATH=$($vstest.FullName)" >> $env:GITHUB_ENV
-            
-            # Run VSTest (Required)
-            # - name: Setup VSTest
-            #   uses: microsoft/vstest-action@v1.0.0
-            #   with:
-            #     testAssembly: |
-            #         testAssembly: tests/CalculatorTests/bin/Release/net8.0/CalculatorTests.dll
                     
             # Run Tests
             - name: Run tests (x86)
               shell: pwsh
               run: |
-                 $dlls = Get-ChildItem -Recurse -Filter *Tests.dll |
-                        Where-Object { $_.FullName -notmatch 'TestAdapter|\\obj\\' }
-                 if (-not $dlls) {
-                    Write-Error "No test DLLs find"
-                    exit 1
-                 }
-
-                 Write-Host "Using settings: $($env.RUNSETTINGS_PATH)"
-                 Write-Host "Test DLLS"
-                 $dlls.FullName
-                 
-                 & "$env:VSTEST_PATH" $dlls.FullName `
-                    /Platform:x86 `
-                    /Settings:"$env:RUNSETTINGS_PATH"
+                    $dlls = Get-ChildItem -Recurse -Filter *Tests.dll |
+                          Where-Object { $_.FullName -notmatch 'TestAdapter|\\obj\\' }
                     
+                    if (-not $dlls) {
+                        Write-Error "No test DLLs Found!"
+                        exit 1
+                    }
+                    
+                    Write-Host "Test DLLS"
+                    $dlls.FullName
+
+                    & "$env:VSTEST_PATH" $dlls.FullName `
+                      /Platform:x86 `
+                      /Settings:"$env:RUNSETTINGS_PATH"
+
             # Upload Artifacts
             - name: Upload test results and coverage reports
               uses: actions/upload-artifact@v4
