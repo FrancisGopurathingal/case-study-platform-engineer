@@ -142,8 +142,9 @@ jobs:
             - name: Run tests (x86)
               shell: pwsh
               run: |
-                    Write-Error "No test DLLs found"
-                        Where-Object { $_.FullName -notmatch 'TestAdapter|\\obj\\' }
+                    $dlls = Get-ChildItem -Recurse -Filter *Tests.dll |
+                          Where-Object { $_.FullName -notmatch 'TestAdapter|\\obj\\' }
+                    
                     if (-not $dlls) {
                         Write-Error "No test DLLs Found!"
                         exit 1
