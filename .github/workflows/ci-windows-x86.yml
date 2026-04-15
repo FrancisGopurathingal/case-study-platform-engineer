@@ -153,6 +153,7 @@ jobs:
                     Write-Host "Test DLLS"
                     $dllPaths = $dlls | ForEach-Object { $_.FullName } | ForEach-Object { '"{0}"' -f $_ }
                     $dllsJoined = $dllPaths -join ' '
+                    Write-Host "Joined dlls $dllsJoined"
 
                     & "$env:VSTEST_PATH" $dllsJoined `
                       /Platform:x86 `
