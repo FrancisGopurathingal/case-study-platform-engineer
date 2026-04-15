@@ -130,7 +130,7 @@ jobs:
               uses: microsoft/vstest-action@v1.0.0
               with:
                 testAssembly: |
-                    testAssembly: ${ env.TEST_DLL }
+                    testAssembly: tests/CalculatorTests/bin/Release/net8.0/CalculatorTests.dll
                     
             # Run Tests
             # - name: Run tests (x86)
