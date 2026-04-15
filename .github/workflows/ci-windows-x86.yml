@@ -5,16 +5,29 @@ on:
         branches: 
             - main
         types: [opened, synchronize, reopened, ready_for_review]
+    workflow_dispatch:  # manual trigger
 
 jobs:
-    build:
+    build: 
+        # Allow:
+        # 1. Push to main (post-merge)
+        # 2. Manual runs ONLY from feature/* or bug/*
+        if: |
+           github.event_name == 'pull_request' ||
+           (
+               github.event_name == 'workflow_dispatch' &&
+               (
+                   startsWith(github.ref, 'refs/heads/feature/') ||
+                   startsWith(github.ref, 'refs/heads/bug/')
+               )
+           )
         
         runs-on: windows-latest
 
         env:
-            SOLUTION: '**/*.sln'
+            SOLUTION: 'DemoSolution.sln'
             BUILD_CONFIGURATION: Release
-            BUILD_PLATFORM: x86
+            BUILD_PLATFORM: "Any CPU"
         
         steps:
             - name: Checkout code
@@ -65,7 +78,11 @@ jobs:
             
             # Restore NuGet packages
             - name: Restore NuGet packages
-              run: nuget restore $env:SOLUTION -ConfigFile NuGet.Config
+              run: nuget restore $env:SOLUTION -ConfigFile nuget.config
+
+            # Setup MSBuild (Required)
+            - name: Setup MSBuild
+              uses: microsoft/setup-msbuild@v2
             
             # Build the solution
             - name: Build the solution (x86)
@@ -92,18 +109,70 @@ jobs:
               run: |
                 echo "DOTNET_ROOT=C:\Program Files (x86)\dotnet" >> $env:GITHUB_ENV
                 echo "DOTNET_ROOT_X86=C:\Program Files (x86)\dotnet" >> $env:GITHUB_ENV
+            
+            # List all the DLL files
+            - name: Debug - List all DLLs
+              shell: pwsh
+              run: |
+                 Get-ChildItem -Recurse -Filter *.dll | Select-Object FullName
 
+            # List all the runsettings files
+            - name: Debug - List all runsettings
+              shell: pwsh
+              run: |
+                 Get-ChildItem -Recurse -Filter *.runsettings | Select-Object FullName
+            
+            # Resolve runsettings path
+            - name: Resolve runsettings path
+              shell: pwsh
+              run: |
+                  $settings = Get-ChildItem -Recurse -Filter coverlet.runsettings | Select-Object -First 1
+                  if (-not $settings) {
+                      Write-Error "coverlet.runsettings not found!"
+                      exit 1
+                  }
+            
+                  Write-Host "Found runsettings at: $($settings.FullName)"
+                  echo "RUNSETTINGS_PATH=$($settings.FullName)" >> $env:GITHUB_ENV
+            
+            # Locate vstest.console.exe
+            - name: Locate vstest.console.exe
+              shell: pwsh
+              run: |
+                    $vstest = Get-ChildItem "C:\Program Files\Microsoft Visual Studio" -Recurse -Filter vstest.console.exe -ErrorAction SilentlyContinue | Select-Object -First 1
+                        if (-not $vstest) {
+                            Write-Error "vstest.console.exe not found!"
+                            exit 1
+                       }
+                    Write-Host "Found vstest at: $($vstest.FullName)"
+                    echo "VSTEST_PATH=$($vstest.FullName)" >> $env:GITHUB_ENV
+            
+            # Run VSTest (Required)
+            # - name: Setup VSTest
+            #   uses: microsoft/vstest-action@v1.0.0
+            #   with:
+            #     testAssembly: |
+            #         testAssembly: tests/CalculatorTests/bin/Release/net8.0/CalculatorTests.dll
+                    
             # Run Tests
             - name: Run tests (x86)
               shell: pwsh
               run: |
-                vstest.console.exe $env:SOLUTION `
-                  "$env:RUNNER_TEMP\artifacts\**\*Tests.dll" `
-                  /Platform:x86 `
-                  /Parallel:false `
-                  /EnableCodeCoverage `
-                  /Settings:"$env:GITHUB_WORKSPACE\coverlet.runsettings"
+                 $dlls = Get-ChildItem -Recurse -Filter *Tests.dll |
+                        Where-Object { $_.FullName -notmatch 'TestAdapter|\\obj\\' }
+                 if (-not $dlls) {
+                    Write-Error "No test DLLs find"
+                    exit 1
+                 }
 
+                 Write-Host "Using settings: $($env.RUNSETTINGS_PATH)"
+                 Write-Host "Test DLLS"
+                 $dlls.FullName
+                 
+                 & "$env:VSTEST_PATH" $dlls.FullName `
+                    /Platform:x86 `
+                    /Settings:"$env:RUNSETTINGS_PATH"
+                    
             # Upload Artifacts
             - name: Upload test results and coverage reports
               uses: actions/upload-artifact@v4
