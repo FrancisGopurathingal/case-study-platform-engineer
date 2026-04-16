@@ -1,62 +1,50 @@
-name: CI - Demo App build and test
+name: CI - .NET Build & Test
 
 on:
   pull_request:
     branches:
       - main
-    types: [opened, synchronize, reopened, ready_for_review]
-  workflow_dispatch:
+  
+permissions:
+  contents: read
 
 jobs:
   build-and-test:
-    # Allow:
-    # 1. Push to main (post-merge)
-    # 2. Manual runs ONLY from feature/* or bug/*
-    if: |
-      github.event_name == 'pull_request' ||
-      (
-        github.event_name == 'workflow_dispatch' &&
-        (
-          startsWith(github.ref, 'refs/heads/feature/') ||
-          startsWith(github.ref, 'refs/heads/bug/')
-        )
-      )
-
+    
+    # Using windows-latest since the same is used in the given ADO pipeline.
     runs-on: windows-latest
 
     env:
       SOLUTION: DemoSolution.sln
       CONFIGURATION: Release
-      TEST_RESULTS: test-results
-      ARTIFACTS: artifacts
     
-    permissions:
-      contents: read
-      pull-requests: read
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # Setting up .NET 8 SDK using the official GitHub Action provided by Microsoft.  
       - name: Setup .NET 8 SDK
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
       
+      # Cache the NuGet packages to speed up subsequent runs.
       - name: Cache NuGet packages
         uses: actions/cache@v4
         with:
           path: ~/.nuget/packages
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*csproj') || 'no-projects' }}
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') || 'no-projects' }}
           restore-keys: |
             ${{ runner.os }}-nuget-
 
       - name: Restore dependencies
         run: dotnet restore ${{ env.SOLUTION }} --locked-mode
 
+      # Replacing ADO VSBuild task with dotnet build command.
       - name: Build solution
         run: dotnet build ${{ env.SOLUTION }} --configuration ${{ env.CONFIGURATION }} --no-restore
 
+      # Replacing ADO VSTest task with dotnet test command.
       - name: Run tests
         shell: bash
         run: |
@@ -64,25 +52,4 @@ jobs:
             --configuration ${{ env.CONFIGURATION }} \
             --no-build \
             --settings coverlet.runsettings \
-            --results-directory ${{ env.TEST_RESULTS }} \
             --logger "trx"
-
-      - name: Publish app artifacts
-        shell: bash
-        run: |
-          dotnet publish src/CalculatorApp/CalculatorApp.csproj \
-            --configuration ${{ env.CONFIGURATION }} \
-            --output ${{ env.ARTIFACTS }} \
-            --no-build
-
-      - name: Upload published artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: calculator-app-artifacts
-          path: ${{ env.ARTIFACTS }}
-
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results
-          path: ${{ env.TEST_RESULTS }}
