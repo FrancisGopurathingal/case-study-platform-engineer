@@ -1,10 +1,29 @@
-﻿using Microsoft.Extensions.Configuration;
 using Calculator.Core.Services;
 using Calculator.Infrastructure.Repositories;
+using Microsoft.Extensions.Configuration;
 
-try
+var builder = WebApplication.CreateBuilder(args);
+
+var isApiMode = args.Any(arg => arg.Equals("--api", StringComparison.OrdinalIgnoreCase) ||
+                                arg.Equals("api", StringComparison.OrdinalIgnoreCase));
+
+var app = builder.Build();
+
+if (isApiMode)
 {
-    // 🔧 Load configuration
+    app.MapGet("/add", (double a, double b) => Results.Ok(a + b));
+
+    app.MapGet("/health", () => Results.Ok("Healthy"));
+
+    app.Run();
+}
+else
+{
+    RunCli();
+}
+
+static void RunCli()
+{
     var config = new ConfigurationBuilder()
         .SetBasePath(AppContext.BaseDirectory)
         .AddJsonFile("appsettings.json", optional: false)
@@ -13,7 +32,6 @@ try
     var dbPath = config["Database:Path"]!;
     var maxHistory = int.Parse(config["Database:MaxHistory"]!);
 
-    // 🧱 Setup dependencies (manual DI)
     var repo = new SqliteOperationRepository(dbPath, maxHistory);
     var service = new CalculatorService(repo);
 
@@ -29,10 +47,10 @@ try
         if (string.IsNullOrWhiteSpace(input))
             continue;
 
-        if (input.ToLower() == "exit")
+        if (input.Equals("exit", StringComparison.OrdinalIgnoreCase))
             break;
 
-        if (input.ToLower() == "history")
+        if (input.Equals("history", StringComparison.OrdinalIgnoreCase))
         {
             var history = service.History();
 
@@ -80,8 +98,4 @@ try
             Console.WriteLine($"Error: {ex.Message}");
         }
     }
-}
-catch (Exception ex)
-{
-    Console.WriteLine($"Fatal error: {ex.Message}");
 }
