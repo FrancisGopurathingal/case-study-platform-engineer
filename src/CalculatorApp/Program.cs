@@ -11,9 +11,12 @@ var app = builder.Build();
 
 if (isApiMode)
 {
-    app.MapGet("/add", (double a, double b) => Results.Ok(a + b));
+    app.MapGet("/add", (double a, double b) => Results.Ok(new { result = a + b }));
+    app.MapGet("/sub", (double a, double b) => Results.Ok(new { result = a - b }));
+    app.MapGet("/mul", (double a, double b) => Results.Ok(new { result = a * b }));
+    app.MapGet("/div", (double a, double b) => Results.Ok(new { result = a / b }));
 
-    app.MapGet("/health", () => Results.Ok("Healthy"));
+    app.MapGet("/health", () => Results.Ok(new { status = "Healthy" }));
 
     app.Run();
 }
