@@ -28,6 +28,7 @@ jobs:
       SOLUTION: DemoSolution.sln
       CONFIGURATION: Release
       TEST_RESULTS: test-results
+      TARGET_PLATFORM: x86
       ARTIFACTS: artifacts
     
     permissions:
@@ -55,13 +56,14 @@ jobs:
         run: dotnet restore ${{ env.SOLUTION }} --locked-mode
 
       - name: Build solution
-        run: dotnet build ${{ env.SOLUTION }} --configuration ${{ env.CONFIGURATION }} --no-restore
+        run: dotnet build ${{ env.SOLUTION }} --configuration ${{ env.CONFIGURATION }} -p:PlatformTarget=${{ env.TARGET_PLATFORM }} --no-restore
 
       - name: Run tests
         shell: bash
         run: |
           dotnet test ${{ env.SOLUTION }} \
             --configuration ${{ env.CONFIGURATION }} \
+            -p:PlatformTarget=${{ env.TARGET_PLATFORM }} \
             --no-build \
             --settings coverlet.runsettings \
             --results-directory ${{ env.TEST_RESULTS }} \
@@ -72,6 +74,7 @@ jobs:
         run: |
           dotnet publish src/CalculatorApp/CalculatorApp.csproj \
             --configuration ${{ env.CONFIGURATION }} \
+            -p:PlatformTarget=${{ env.TARGET_PLATFORM }} \
             --output ${{ env.ARTIFACTS }} \
             --no-build
 
